@@ -4,14 +4,8 @@ inputs:
   team:
     description: 'The Thunderstore team to publish the mod under'
     required: true
-  token:
-    description: 'The token to use for Thunderstore API'
-    required: true
   community:
     description: 'The community to publish the mod under'
-    required: true
-  version:
-    description: 'The version of the mod to publish'
     required: true
 
 
@@ -32,9 +26,14 @@ jobs:
         id: get_modpack_name
         run: echo "name=${{ steps.extract_modpack_name.outputs.value }}" >> $GITHUB_OUTPUT
 
+      - name: Strip 'v' from version tag
+        id: strip_version
+        run: |
+          echo "version=$(echo ${{ github_ref }} | sed 's/v//')" >> $GITHUB_OUTPUT
+
       - name: Update version in manifest
         run: |
-          jq '.version_number = "${{ inputs.version }}"' modpack/manifest.json > temp.json
+          jq '.version_number = "${{ steps.strip_version.outputs.version }}"' modpack/manifest.json > temp.json
           mv temp.json modpack/manifest.json
           cat modpack/manifest.json
 
@@ -53,9 +52,9 @@ jobs:
         with:
           namespace: ${{ inputs.thunderstore-team }} # the thunderstore 'team' to publish under
           description: ${{ steps.get_modpack_description.outputs.description }}
-          token: ${{ inputs.thunderstore-token }}
+          token: ${{ secrets.THUNDERSTORE_TOKEN }}
           name: ${{ steps.get_modpack_name.outputs.name }} # the name of the package
-          version: ${{ inputs.version }}
+          version: ${{ steps.strip_version.outputs.version }}
           community: ${{ inputs.thunderstore-community }} 
           repo: thunderstore.io
           file: modpack.zip
