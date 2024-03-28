@@ -11,6 +11,10 @@ on:
         type: string
         description: "The community to publish the mod under"
         required: true
+      test-branch-name:
+        type: string
+        description: "Clients can use a feature branch with a name matching a branch name from this repository, in order to publish to thunderstore from a feature branch."
+        required: false
 
 jobs:
   publish:
@@ -18,7 +22,6 @@ jobs:
     steps:
       # Use checkout to publish the files in your repo
       - uses: actions/checkout@v4
-
 
       - uses: tibdex/github-app-token@v1
         id: get_installation_token
@@ -84,7 +87,7 @@ jobs:
           echo "description: ${{ steps.get_modpack_description.outputs.description }}"
 
       - uses: GreenTF/upload-thunderstore-package@v4.2
-        if: ${{ github.ref == 'main' }}
+        if: ${{ (github.ref_name == inputs.test-branch-name) && inputs.test-branch-name  || 'main' }}
         with:
           namespace: ${{ inputs.team }} # the thunderstore 'team' to publish under
           description: ${{ steps.get_modpack_description.outputs.description }}
