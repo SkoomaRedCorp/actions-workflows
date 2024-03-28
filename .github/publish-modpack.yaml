@@ -1,0 +1,63 @@
+name: Publish Mod
+
+inputs:
+  team:
+    description: 'The Thunderstore team to publish the mod under'
+    required: true
+  token:
+    description: 'The token to use for Thunderstore API'
+    required: true
+  community:
+    description: 'The community to publish the mod under'
+    required: true
+  version:
+    description: 'The version of the mod to publish'
+    required: true
+
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Use checkout to publish the files in your repo
+      - uses: actions/checkout@v4
+
+      - name: Extract name from manifest
+        uses: sergeysova/jq-action@v2
+        id: extract_modpack_name
+        with:
+          cmd: "jq .name modpack/manifest.json -r"
+
+      - name: Save modpack name in github output
+        id: get_modpack_name
+        run: echo "name=${{ steps.extract_modpack_name.outputs.value }}" >> $GITHUB_OUTPUT
+
+      - name: Update version in manifest
+        run: |
+          jq '.version_number = "${{ inputs.version }}"' modpack/manifest.json > temp.json
+          mv temp.json modpack/manifest.json
+          cat modpack/manifest.json
+
+      - name: Get modpack description
+        id: get_modpack_description
+        run: |
+          description=$(jq -r '.description' modpack/manifest.json)
+          echo "description=${description}" >> $GITHUB_OUTPUT
+
+      - uses: vimtor/action-zip@v1.2
+        with:
+          files: modpack/
+          dest: modpack.zip
+
+      - uses: GreenTF/upload-thunderstore-package@v4.2
+        with:
+          namespace: ${{ inputs.thunderstore-team }} # the thunderstore 'team' to publish under
+          description: ${{ steps.get_modpack_description.outputs.description }}
+          token: ${{ inputs.thunderstore-token }}
+          name: ${{ steps.get_modpack_name.outputs.name }} # the name of the package
+          version: ${{ inputs.version }}
+          community: ${{ inputs.thunderstore-community }} 
+          repo: thunderstore.io
+          file: modpack.zip
+          categories: | # <-- notice this pipe character
+            modpacks
