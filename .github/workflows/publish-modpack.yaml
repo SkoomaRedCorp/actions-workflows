@@ -19,8 +19,6 @@ jobs:
       # Use checkout to publish the files in your repo
       - uses: actions/checkout@v4
 
-      - name: install dependencies
-        run: npm install fs path
 
       - uses: tibdex/github-app-token@v1
         id: get_installation_token
@@ -35,8 +33,13 @@ jobs:
           ref: ${{ (github.ref_name == inputs.test-branch-name) && inputs.test-branch-name  || 'main' }}
           token: ${{ steps.get_installation_token.outputs.token }}
 
+      - name: install dependencies
+        run: |
+         cd cicd/scripts
+         npm install fs path
+
       - name: Validate
-        run: node scripts/validate.js
+        run: node cicd/scripts/validate.js
 
       - name: Save Github ref
         run: echo "github_ref=${{ github.ref_name }}" >> $GITHUB_OUTPUT
