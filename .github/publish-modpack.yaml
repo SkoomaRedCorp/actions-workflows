@@ -8,13 +8,18 @@ inputs:
     description: 'The community to publish the mod under'
     required: true
 
-
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       # Use checkout to publish the files in your repo
       - uses: actions/checkout@v4
+
+      - name: Validate
+        run: node scripts/validate.js
+
+      - name: Save Github ref
+        run: echo "github_ref=${{ github_ref }}" >> $GITHUB_OUTPUT
 
       - name: Extract name from manifest
         uses: sergeysova/jq-action@v2
@@ -48,7 +53,15 @@ jobs:
           files: modpack/
           dest: modpack.zip
 
+      - name: Output Summary
+        run: |
+          echo "github_ref: ${{ github_ref }}"
+          echo "name: ${{ steps.get_modpack_name.outputs.name }}"
+          echo "version: ${{ steps.strip_version.outputs.version }}"
+          echo "description: ${{ steps.get_modpack_description.outputs.description }}"
+
       - uses: GreenTF/upload-thunderstore-package@v4.2
+        if: ${{ github.ref == 'main' }}
         with:
           namespace: ${{ inputs.thunderstore-team }} # the thunderstore 'team' to publish under
           description: ${{ steps.get_modpack_description.outputs.description }}
