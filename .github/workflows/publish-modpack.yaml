@@ -19,6 +19,9 @@ jobs:
       # Use checkout to publish the files in your repo
       - uses: actions/checkout@v4
 
+      - name: install dependencies
+        run: npm install fs path
+
       - name: Validate
         run: node scripts/validate.js
 
