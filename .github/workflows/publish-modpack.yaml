@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: "beeheim/actions-workflow"
+          repository: "beeheim/actions-workflows"
           path: cicd
           ref: ${{ (github.ref_name == inputs.test-branch-name) && inputs.test-branch-name  || 'main' }}
           token: ${{ steps.get_installation_token.outputs.token }}
