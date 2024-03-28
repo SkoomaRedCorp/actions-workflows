@@ -1,12 +1,16 @@
 name: Publish Mod
 
-inputs:
-  team:
-    description: 'The Thunderstore team to publish the mod under'
-    required: true
-  community:
-    description: 'The community to publish the mod under'
-    required: true
+on:
+  workflow_call:
+    inputs:
+      team:
+        type: string
+        description: "The Thunderstore team to publish the mod under"
+        required: true
+      community:
+        type: string
+        description: "The community to publish the mod under"
+        required: true
 
 jobs:
   publish:
@@ -19,7 +23,7 @@ jobs:
         run: node scripts/validate.js
 
       - name: Save Github ref
-        run: echo "github_ref=${{ github_ref }}" >> $GITHUB_OUTPUT
+        run: echo "github_ref=${{ github.ref_name }}" >> $GITHUB_OUTPUT
 
       - name: Extract name from manifest
         uses: sergeysova/jq-action@v2
@@ -34,7 +38,7 @@ jobs:
       - name: Strip 'v' from version tag
         id: strip_version
         run: |
-          echo "version=$(echo ${{ github_ref }} | sed 's/v//')" >> $GITHUB_OUTPUT
+          echo "version=$(echo ${{ github.ref_name }} | sed 's/v//')" >> $GITHUB_OUTPUT
 
       - name: Update version in manifest
         run: |
@@ -55,7 +59,7 @@ jobs:
 
       - name: Output Summary
         run: |
-          echo "github_ref: ${{ github_ref }}"
+          echo "github_ref: ${{ github.ref_name }}"
           echo "name: ${{ steps.get_modpack_name.outputs.name }}"
           echo "version: ${{ steps.strip_version.outputs.version }}"
           echo "description: ${{ steps.get_modpack_description.outputs.description }}"
@@ -63,12 +67,12 @@ jobs:
       - uses: GreenTF/upload-thunderstore-package@v4.2
         if: ${{ github.ref == 'main' }}
         with:
-          namespace: ${{ inputs.thunderstore-team }} # the thunderstore 'team' to publish under
+          namespace: ${{ inputs.team }} # the thunderstore 'team' to publish under
           description: ${{ steps.get_modpack_description.outputs.description }}
           token: ${{ secrets.THUNDERSTORE_TOKEN }}
           name: ${{ steps.get_modpack_name.outputs.name }} # the name of the package
           version: ${{ steps.strip_version.outputs.version }}
-          community: ${{ inputs.thunderstore-community }} 
+          community: ${{ inputs.community }}
           repo: thunderstore.io
           file: modpack.zip
           categories: | # <-- notice this pipe character
