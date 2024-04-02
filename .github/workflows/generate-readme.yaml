@@ -1,0 +1,49 @@
+# .github/workflows/generate-readme.yml
+
+on:
+  workflow_call:
+    inputs:
+      test-branch-name:
+        type: string
+        description: "Clients can use a feature branch with a name matching a branch name from this repository, in order to publish to thunderstore from a feature branch."
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  generate-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: tibdex/github-app-token@v1
+        id: get_installation_token
+        with:
+          app_id: ${{ vars.CI_APP_ID }}
+          private_key: ${{ secrets.CI_TOKEN }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: "beeheim/actions-workflows"
+          path: cicd
+          ref: ${{ (github.ref_name == inputs.test-branch-name) && inputs.test-branch-name  || 'main' }}
+          token: ${{ steps.get_installation_token.outputs.token }}
+
+      - name: install dependencies
+        run: |
+          cd cicd/scripts
+          npm install fs path
+
+      - name: Generate README
+        run: node cicd/scripts/generate-readme.js
+
+      - name: Commit README
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions[bot]@users.noreply.github.com
+          git add .
+          git commit -m "chore: Update README"
+          git branch update-readme
+          git push origin update-readme
